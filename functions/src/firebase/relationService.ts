@@ -270,3 +270,41 @@ relationServiceApp.get('/getRelationByIndustry/:industry', (req, res) => {
      });
 
 })
+
+relationServiceApp.post('/editRelation', (req, res) => {
+
+     console.info('editRelation', req.body);
+
+     const relation = req.body
+
+     const respDoc: any = {};
+
+     const relationDoc = {
+          relationType: relation.relationType,
+          relationDetail: relation.relationDetail,
+          cashAmount: Number.parseInt(relation.cashAmount)
+     }
+
+     console.info('relationDoc', relationDoc);
+
+     db.collection('relation').doc(relation.key).update(relationDoc).then(function (resultSnapshot) {
+          res.send({ status: 'Complete', date: new Date(), data: respDoc });
+     }).catch(respError => {
+          res.send({ status: 'Error', date: new Date(), data: respError });
+     });
+
+})
+
+relationServiceApp.post('/deleteRelation', (req, res) => {
+
+     console.info('deleteRelation', req.body);
+
+     const relationKey = req.body.key
+
+     db.collection('relation').doc(relationKey).delete().then(function (resultSnapshot) {
+          res.send({ status: 'Complete', date: new Date(), data: resultSnapshot });
+     }).catch(respError => {
+          res.send({ status: 'Error', date: new Date(), data: respError });
+     });
+
+})

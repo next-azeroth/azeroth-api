@@ -245,8 +245,6 @@ companyServiceApp.post('/createCompany', (req, res) => {
 
      const company = req.body.company
 
-
-
      const companyDoc = {
           taxId: company.taxId,
           group: company.group ,
@@ -268,97 +266,63 @@ companyServiceApp.post('/createCompany', (req, res) => {
 
 })
 
+companyServiceApp.post('/editCompany', (req, res) => {
 
-/*
-
-companyServiceApp.post('/createCompany', (req, res) => {
-
-     console.info('createCompany', req.body);
-
-     let partyNode = ['Suppier', 'Distributor', 'Retailer', 'Customer']
+     console.info('editCompany', req.body);
 
      const company = req.body.company
 
      const companyDoc = {
-          country: company.country,
-          group: company.group,
+          taxId: company.taxId,
+          group: company.group ,
           industry: company.industry,
           name: company.name,
-          taxId: company.taxId,
-          value: company.value,
-          created: new Date()
+          value: Number.parseInt(company.value),
+          profile: {
+               member: Number.parseInt((company.profile.member? company.profile.member :1)),
+               country: company.profile.country
+          }
      }
 
+     console.info('companyDoc', companyDoc);
 
-     db.collection('company').add(companyDoc).then(function (resultSnapshot) {
-
-          console.log('Create company party')
-          const promiseArray: any = []
-          for (let i = 0; i < partyNode.length; i++) {
-               promiseArray.push(
-                    new Promise((resolve, reject) => {
-                         const nodeDoc = {
-                              country: company.country,
-                              group: company.group,
-                              industry: company.industry,
-                              name: company.name + '-' + partyNode[i],
-                              taxId: company.taxId,
-                              value: company.value,
-                              created: new Date()
-                         }
-                         db.collection('company').add(nodeDoc).then(function (resultNodeSnapshot) {
-                              console.info('create', company.name + '-' + partyNode[i]);
-                              resolve(resultNodeSnapshot.id + '-' + partyNode[i])
-                         }).catch(respError => {
-                              reject(respError)
-                         });
-                    })
-               )
-          }
-
-          console.info('Waiting all complete');
-          Promise.all(promiseArray).then((companyResp: any) => {
-
-               const promiseRelationArray: any = []
-               for (let i = 0; i < companyResp.length; i++) {
-                    promiseRelationArray.push(
-                         new Promise((resolve, reject) => {
-                              let splitNodeResult = companyResp[i].split('-')
-                              const relationDoc = {
-                                   companyFrom: resultSnapshot.id,
-                                   companyTo: splitNodeResult[0],
-                                   relationType: 'Company-' + splitNodeResult[1],
-                                   relationDetail: '',
-                                   cashAmount: 0,
-                                   created: new Date()
-                              }
-                              db.collection('relation').add(relationDoc).then(function (resultNodeSnapshot) {
-                                   console.info('create relation', company.name + '-' + partyNode[i]);
-                                   resolve(company.name + '-' + partyNode[i])
-                              }).catch(respError => {
-                                   reject(respError)
-                              });
-                         })
-                    )
-               }
-
-               console.info('Waiting all complete');
-               Promise.all(promiseArray).then(relationResp => {
-                    res.send({ status: 'Complete', date: new Date(), data: {'company' : companyResp , 'relation' : relationResp }});
-               }).catch(respError => {
-                    res.send({ status: 'Error', date: new Date(), data: respError });
-               })
-          }).catch(respError => {
-               res.send({ status: 'Error', date: new Date(), data: respError });
-          })
-
+     db.collection('company').doc(company.key).update(companyDoc).then(function (resultSnapshot) {
+          res.send({ status: 'Complete', date: new Date(), data: resultSnapshot });
      }).catch(respError => {
           res.send({ status: 'Error', date: new Date(), data: respError });
      });
 
 })
 
-*/
+companyServiceApp.post('/deleteCompany', (req, res) => {
+
+     console.info('deleteCompany', req.body);
+
+     const company = req.body.company
+     const relationList = req.body.relation
+
+     let promiseArray : any = []
+
+     relationList.forEach((relation : any) => {
+          promiseArray.push(new Promise((resolve, reject) => {
+               db.collection('relation').doc(relation.key).delete().then(resp => {
+                    resolve(resp)
+               }).catch(error => {
+                    reject(error)
+               })
+          }))
+     });
+
+     Promise.all(promiseArray).then(resp => {
+          db.collection('company').doc(company.key).delete().then(function (resultSnapshot) {
+               res.send({ status: 'Complete', date: new Date(), data: resultSnapshot });
+          }).catch(respError => {
+               res.send({ status: 'Error', date: new Date(), data: respError });
+          });
+     }).catch(error => {
+          res.send({ status: 'Error', date: new Date(), data: error });
+     })
+})
 
 companyServiceApp.post('/importCompanyByList', (req, res) => {
 
@@ -477,31 +441,6 @@ companyServiceApp.post('/randomIndustryByList', (req, res) => {
      })
 
 })
-
-companyServiceApp.post('/updateCompany', (req, res) => {
-
-     const company = req.body.company
-     const companyDoc = {
-          country: company.country,
-          group: company.group,
-          industry: company.industry,
-          name: company.name,
-          taxId: company.taxId,
-          value: Number.parseInt(company.value),
-          created: new Date()
-     }
-
-     console.info('updateCompany');
-     const respDoc: any[] = []
-
-     db.collection('company').doc(company.key).set(companyDoc).then(function (resultSnapshot) {
-          res.send({ status: 'Complete', date: new Date(), data: respDoc });
-     }).catch(respError => {
-          res.send({ status: 'Error', date: new Date(), data: respError });
-     })
-
-})
-
 
 companyServiceApp.get('/getIndustry', (req, res) => {
 
